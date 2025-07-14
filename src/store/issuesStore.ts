@@ -24,9 +24,11 @@ interface IssuesState {
   selectedIssue: Issue | null; // Currently selected issue for detail view
   setRepo: (repo: string) => void; // Set repository name
   setFilter: (filter: FilterType) => void; // Set filter
-  fetchIssues: () => Promise<void>; // Fetch issues from GitHub API
+  fetchIssues: () => Promise<void>; // Fetch issues from GitHub API or cache
   selectIssue: (issue: Issue | null) => void; // Select or deselect an issue
 }
+
+const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes in ms
 
 // Zustand store implementation
 export const useIssuesStore = create<IssuesState>((set, get) => ({
@@ -43,7 +45,17 @@ export const useIssuesStore = create<IssuesState>((set, get) => ({
     const { repo, filter } = get();
     if (!repo) return;
     set({ loading: true, error: null, issues: [] });
+    const cacheKey = `issues:${repo}:${filter}`;
     try {
+      // Try to load from cache
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_EXPIRY) {
+          set({ issues: data, loading: false });
+          return;
+        }
+      }
       // Fetch issues from GitHub REST API
       const url = `https://api.github.com/repos/${repo}/issues?per_page=50&sort=updated&direction=desc&state=${filter === 'all' ? 'all' : filter}`;
       const res = await fetch(url, {
@@ -56,6 +68,8 @@ export const useIssuesStore = create<IssuesState>((set, get) => ({
       }
       const data = await res.json();
       set({ issues: data, loading: false });
+      // Update cache
+      localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
     } catch (e: unknown) {
       // Handle fetch or network errors
       const message = typeof e === 'object' && e && 'message' in e ? (e as { message: string }).message : 'Unknown error';

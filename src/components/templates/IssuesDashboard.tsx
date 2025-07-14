@@ -22,6 +22,7 @@ const IssuesDashboard: React.FC = () => {
   } = useIssuesStore();
   const [input, setInput] = useState(repo);
   const [dark, setDark] = useState(false);
+  const [search, setSearch] = useState('');
 
   // Fetch issues when repo or filter changes
   useEffect(() => {
@@ -45,9 +46,40 @@ const IssuesDashboard: React.FC = () => {
     setRepo(input.trim());
   };
 
+  // Manual refresh handler: bypass cache and fetch fresh data
+  const handleRefresh = async () => {
+    const { repo, filter } = useIssuesStore.getState();
+    if (!repo) return;
+    useIssuesStore.setState({ loading: true, error: null, issues: [] });
+    try {
+      const url = `https://api.github.com/repos/${repo}/issues?per_page=50&sort=updated&direction=desc&state=${filter === 'all' ? 'all' : filter}`;
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch issues: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      useIssuesStore.setState({ issues: data, loading: false });
+      // Update cache
+      localStorage.setItem(`issues:${repo}:${filter}`, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch (e: unknown) {
+      let message = 'Unknown error';
+      function hasMessage(err: unknown): err is { message: string } {
+        return typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string';
+      }
+      if (hasMessage(e)) {
+        message = e.message;
+      }
+      useIssuesStore.setState({ error: message, loading: false });
+    }
+  };
+
   return (
     <div className="flex w-screen min-h-screen justify-center bg-white dark:bg-gray-900 transition-colors">
-      <div className="w-full max-w-2xl p-4 sm:p-8 bg-white shadow-xl rounded-2xl border border-blue-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800 mt-8">
+      <div className="w-full max-w-2xl p-4 sm:p-8 bg-white shadow-xl rounded-2xl border border-blue-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800 mt-8 mb-12">
         {/* Dark mode toggle button */}
         <div className="flex justify-end mb-4">
           <button
@@ -58,9 +90,9 @@ const IssuesDashboard: React.FC = () => {
           </button>
         </div>
         {/* Repo input form */}
-        <form onSubmit={handleSubmit} className="mb-6">
-          <label htmlFor="repo-input" className="block text-sm font-medium text-blue-900 mb-2 dark:text-gray-100">GitHub Repository</label>
-          <div className="flex rounded-2xl shadow-sm bg-blue-50 border border-blue-100 focus-within:ring-2 focus-within:ring-blue-500 dark:bg-gray-800 dark:border-gray-700">
+        <form onSubmit={handleSubmit} className="mb-6 flex gap-2 items-end">
+          <div className="flex-1">
+            <label htmlFor="repo-input" className="block text-sm font-medium text-blue-900 mb-2 dark:text-gray-100">GitHub Repository</label>
             <input
               id="repo-input"
               type="text"
@@ -71,23 +103,46 @@ const IssuesDashboard: React.FC = () => {
               aria-label="Repository name"
               autoComplete="off"
             />
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-8 py-3 border-0 rounded-r-2xl bg-blue-600 text-white text-lg font-bold shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:bg-blue-700 dark:hover:bg-blue-800"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-              Load
-            </button>
           </div>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-8 py-3 border-0 rounded-2xl bg-blue-600 text-white text-lg font-bold shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:bg-blue-700 dark:hover:bg-blue-800"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            Load
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-2 px-6 py-3 border-0 rounded-2xl bg-blue-100 text-blue-900 text-lg font-bold shadow-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M5 19A9 9 0 0 1 19 5" /></svg>
+            Refresh
+          </button>
         </form>
         {/* Filter tabs for issue state */}
         <FilterTabs value={filter} onChange={setFilter} />
+        {/* Search bar for title and author */}
+        <div className="mb-4">
+          <input
+            type="text"
+            className="w-full rounded-xl border border-blue-100 px-4 py-2 text-base bg-blue-50 text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-700"
+            placeholder="Search by title or author..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            aria-label="Search issues"
+            autoComplete="off"
+          />
+        </div>
         {/* Loading, error, and issue list display */}
         {loading && <Loading />}
         {error && <ErrorMessage message={error} />}
         {!loading && !error && (
           <IssueList
-            issues={issues}
+            issues={issues.filter(issue =>
+              issue.title.toLowerCase().includes(search.toLowerCase()) ||
+              issue.user.login.toLowerCase().includes(search.toLowerCase())
+            )}
             onIssueClick={issue => selectIssue(issue)}
           />
         )}
@@ -110,7 +165,7 @@ const IssuesDashboard: React.FC = () => {
                 ))}
               </div>
               {/* Render issue body as Markdown */}
-              <div className="prose max-w-none markdown-body dark:prose-invert" dangerouslySetInnerHTML={{ __html: window.marked?.parse(selectedIssue.body || '') || selectedIssue.body }} />
+              <div className="prose max-w-none markdown-body dark:prose-invert p-4" dangerouslySetInnerHTML={{ __html: window.marked?.parse(selectedIssue.body || '') || selectedIssue.body }} />
             </div>
           </div>
         )}
