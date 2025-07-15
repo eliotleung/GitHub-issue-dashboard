@@ -5,7 +5,9 @@ import IssueList from '../organisms/IssueList';
 import Loading from '../atoms/Loading';
 import ErrorMessage from '../atoms/ErrorMessage';
 
+// Main dashboard component for GitHub Issues
 const IssuesDashboard: React.FC = () => {
+  // Zustand store hooks for state and actions
   const {
     repo,
     setRepo,
@@ -20,11 +22,13 @@ const IssuesDashboard: React.FC = () => {
   } = useIssuesStore();
   const [input, setInput] = useState(repo);
 
+  // Fetch issues when repo or filter changes
   useEffect(() => {
     if (repo) fetchIssues();
     // eslint-disable-next-line
   }, [repo, filter]);
 
+  // Handle repo input form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setRepo(input.trim());
@@ -32,6 +36,7 @@ const IssuesDashboard: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white min-h-screen shadow-xl rounded-2xl border border-blue-100">
+      {/* Repo input form */}
       <form onSubmit={handleSubmit} className="mb-6">
         <label htmlFor="repo-input" className="block text-sm font-medium text-blue-900 mb-2">GitHub Repository</label>
         <div className="flex rounded-2xl shadow-sm bg-blue-50 border border-blue-100 focus-within:ring-2 focus-within:ring-blue-500">
@@ -54,7 +59,9 @@ const IssuesDashboard: React.FC = () => {
           </button>
         </div>
       </form>
+      {/* Filter tabs for issue state */}
       <FilterTabs value={filter} onChange={setFilter} />
+      {/* Loading, error, and issue list display */}
       {loading && <Loading />}
       {error && <ErrorMessage message={error} />}
       {!loading && !error && (
@@ -63,6 +70,7 @@ const IssuesDashboard: React.FC = () => {
           onIssueClick={issue => selectIssue(issue)}
         />
       )}
+      {/* Issue detail modal */}
       {selectedIssue && (
         <div className="fixed inset-0 bg-blue-900 bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative overflow-y-auto max-h-[90vh] text-blue-900 border border-blue-100">
@@ -80,6 +88,7 @@ const IssuesDashboard: React.FC = () => {
                 <span key={label.id} className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800">{label.name}</span>
               ))}
             </div>
+            {/* Render issue body as Markdown */}
             <div className="prose max-w-none markdown-body" dangerouslySetInnerHTML={{ __html: window.marked?.parse(selectedIssue.body || '') || selectedIssue.body }} />
           </div>
         </div>
