@@ -42,72 +42,42 @@ This project is a simple, modern dashboard for browsing and searching GitHub iss
 
 ---
 
-# React + TypeScript + Vite
+## Suggestions for Further Improvement
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Below are some ideas for enhancing the dashboard, with a focus on security, performance, and user experience. All suggestions use Australian English spelling and conventions.
 
-Currently, two official plugins are available:
+### Security
+- Warn users if they are approaching GitHub’s API rate limit (60 requests per hour for unauthenticated users).
+- Optionally, allow users to enter a GitHub personal access token for higher rate limits (with a clear privacy notice).
+- Strictly validate the `owner/repo` input format before making API calls.
+- Sanitize all user input to prevent injection attacks.
+- Ensure Markdown is rendered safely (avoid XSS) by using a library such as `dompurify` in combination with your Markdown parser.
+- Gracefully handle all fetch errors, including network issues, API errors, and unexpected data formats.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Performance
+- Support loading more than 50 or 100 issues by implementing pagination or infinite scroll, reducing initial load time and memory usage.
+- Debounce the search input to avoid unnecessary re-renders on every keystroke.
+- Use `React.memo` for pure components to avoid unnecessary re-renders.
+- Consider virtualisation (e.g., `react-window`) for very large lists.
+- Use IndexedDB for larger or more persistent caches.
+- Invalidate cache if the repository or filter changes, or allow users to clear the cache.
+- Analyse and optimise bundle size (e.g., only import what you use from libraries).
 
-## Expanding the ESLint configuration
+### User Interface and Experience
+- Ensure all interactive elements are keyboard accessible.
+- Add ARIA labels and roles where appropriate.
+- Use focus outlines and visible states for all controls.
+- Further optimise for mobile: larger touch targets, better spacing, and responsive font sizes.
+- Use skeleton loaders instead of spinners for a smoother perceived experience.
+- Provide friendly, actionable messages for empty results and errors (e.g., “No issues found”, “Repository not found”).
+- Use the actual GitHub label colours for better visual consistency.
+- Allow users to select system theme or remember their dark/light mode preference.
+- Display the creator’s avatar next to their name for a more engaging UI.
+- Make issue titles clickable, opening the issue on GitHub in a new tab.
+- Support images, code blocks, and tables in Markdown rendering. Optionally, allow users to copy code blocks easily.
+- Add a simple settings panel for advanced options (e.g., token input, cache clear, theme).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Advanced (Optional)
+- Make the app installable and usable offline (for cached data) as a Progressive Web App (PWA).
+- Support multiple languages (localisation).
+- Track usage (with user consent) to improve features.
