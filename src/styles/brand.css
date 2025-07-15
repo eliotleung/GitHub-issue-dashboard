@@ -1,0 +1,21 @@
+:root {
+  /* Brand colours (can be overridden for whitelabel) */
+  --color-brand: #2563eb; /* Default blue */
+  --color-brand-light: #60a5fa;
+  --color-brand-dark: #1e40af;
+  --color-accent: #f59e42;
+
+  /* Brand font (can be overridden) */
+  --font-brand: 'Inter', ui-sans-serif, system-ui;
+}
+
+/* Example: override for a specific client/brand */
+/*
+.brand-clientA {
+  --color-brand: #d7263d;
+  --color-brand-light: #ff758f;
+  --color-brand-dark: #a4132c;
+  --color-accent: #ffb400;
+  --font-brand: 'Roboto', Arial, sans-serif;
+}
+*/ 
